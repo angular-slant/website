@@ -1,27 +1,19 @@
+@import url("/assets/css/bootstrap.min.css");
+@import url("/assets/css/fontawesome.min.css");
+@import url("/assets/css/venobox.min.css");
+@import url("/assets/css/animate.min.css");
+@import url("/assets/css/keyframe-animation.css");
+@import url("/assets/css/odometer.min.css");
+@import url("/assets/css/nice-select.css");
+@import url("/assets/css/carouselTicker.css");
+@import url("/assets/css/swiper.min.css");
+@import url("/assets/css/main.css");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+.test {
+  height: var(--rr-fs-h1);
+  width: var(--rr-fs-h1);
 }
