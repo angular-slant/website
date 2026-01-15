@@ -32,6 +32,7 @@ interface FormData {
   service: string
   budget: string
   message: string
+  website: string // Honeypot field
 }
 
 interface FormErrors {
@@ -48,6 +49,7 @@ export function ContactForm() {
     service: '',
     budget: '',
     message: '',
+    website: '',
   })
   const [errors, setErrors] = useState<FormErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -140,6 +142,7 @@ export function ContactForm() {
               service: '',
               budget: '',
               message: '',
+              website: '',
             })
           }}
           variant="outline"
@@ -152,6 +155,18 @@ export function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Honeypot field - hidden from users, bots will fill it */}
+      <input
+        type="text"
+        name="website"
+        value={formData.website}
+        onChange={handleChange}
+        autoComplete="off"
+        tabIndex={-1}
+        aria-hidden="true"
+        style={{ position: 'absolute', left: '-9999px', opacity: 0 }}
+      />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <Input
           id="name"

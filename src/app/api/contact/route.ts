@@ -3,10 +3,79 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+// Rate limiter: Map of IP -> { count, resetDate }
+const rateLimitMap = new Map<string, { count: number; resetDate: number }>()
+const MAX_REQUESTS_PER_DAY = 3
+
+function getClientIP(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for')
+  if (forwarded) {
+    return forwarded.split(',')[0].trim()
+  }
+  const realIP = request.headers.get('x-real-ip')
+  if (realIP) {
+    return realIP
+  }
+  return 'unknown'
+}
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now()
+  const record = rateLimitMap.get(ip)
+
+  if (!record || now > record.resetDate) {
+    // Reset or create new record - resets at midnight
+    const tomorrow = new Date()
+    tomorrow.setHours(24, 0, 0, 0)
+    rateLimitMap.set(ip, { count: 1, resetDate: tomorrow.getTime() })
+    return false
+  }
+
+  if (record.count >= MAX_REQUESTS_PER_DAY) {
+    return true
+  }
+
+  record.count++
+  return false
+}
+
+function looksLikeSpam(text: string): boolean {
+  if (!text || text.length < 3) return false
+  // No spaces in text longer than 10 chars = likely gibberish
+  if (!text.includes(' ') && text.length > 10) return true
+  // Too many uppercase letters (>40%)
+  const upperCount = (text.match(/[A-Z]/g) || []).length
+  if (upperCount > text.length * 0.4) return true
+  // Excessive consecutive consonants (common in random strings)
+  if (/[bcdfghjklmnpqrstvwxyz]{5,}/i.test(text)) return true
+  return false
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, email, company, service, message } = body
+    const { name, email, company, service, message, website } = body
+
+    // Honeypot check - bots fill this hidden field
+    if (website) {
+      // Silent success to not alert bots
+      return NextResponse.json({ success: true })
+    }
+
+    // Spam content check
+    if (looksLikeSpam(name) || looksLikeSpam(company) || looksLikeSpam(message)) {
+      // Silent success to not alert bots
+      return NextResponse.json({ success: true })
+    }
+
+    // Rate limiting
+    const clientIP = getClientIP(request)
+    if (isRateLimited(clientIP)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again tomorrow.' },
+        { status: 429 }
+      )
+    }
 
     // Validate required fields
     if (!name || !email || !message) {
